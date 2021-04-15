@@ -8,3 +8,6 @@ output/
 hog.xml
 scaler.dat
 model.dat
+car_cfg*/
+*.h5
+mrcnn/__pycache__/
