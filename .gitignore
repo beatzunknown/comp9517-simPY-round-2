@@ -9,3 +9,6 @@ hog.xml
 scaler.dat
 model.dat
 archive/
+car_cfg*/
+*.h5
+mrcnn/__pycache__/
