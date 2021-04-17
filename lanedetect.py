@@ -172,10 +172,10 @@ def extrapolateLine(img, gradient, x1, y1, color=[255, 0, 0], thickness=2):
         print("hello", int(topPoint), int(pointOn720),
               int(yPointOnTop), int(ypointOn720))
 
-        return [int(topPoint), int(yPointOnTop), int(pointOn720), int(ypointOn720)]
+        return [int(pointOn720), int(ypointOn720), int(topPoint), int(yPointOnTop)]
 
-        cv2.line(img, (int(topPoint), int(yPointOnTop)),
-                 (int(pointOn720), int(ypointOn720)), color, thickness)
+        cv2.line(img, (int(pointOn720), int(ypointOn720)),
+                 (int(topPoint), int(yPointOnTop)), color, thickness)
 
 
 def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
@@ -194,13 +194,13 @@ def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
     print(goodLines)
 
     linesOnSideLeft = [line for line in goodLines
-                       if line != None and (line[0] == 0 or line[2] == 0)]
+                       if line != None and (line[0] == 0)]
 
     linesOnSideRight = [line for line in goodLines if line !=
-                        None and (line[0] == 1280 or line[2] == 1280)]
+                        None and (line[0] == 1280)]
 
     linesOnBottom = [line for line in goodLines
-                     if line != None and (0 < line[0] < 1280 or 0 < line[2] < 1280)]
+                     if line != None and (0 < line[0] < 1280)]
 
     goodLinesOnBottom = []
     goodLinesOnLeft = []
@@ -209,7 +209,7 @@ def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
     for i in range(0, 1152 + 1, 128):
         group = [line for line in linesOnBottom
                  if (line[1] == 720 and line[0]
-                     in range(i, i + 128)) or (line[3] == 720 and line[2] in range(i, i + 128))]
+                     in range(i, i + 128))]
 
         if len(group) > 0:
             lineICareAbout = group[(len(group) - 1) // 2]
@@ -218,17 +218,16 @@ def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
             cv2.line(img, (int(lineICareAbout[0]), int(lineICareAbout[1])),
                      (int(lineICareAbout[2]), int(lineICareAbout[3])), color, 10)
 
-    for i in range(0, 576 + 1, 144):
+    for i in range(432, 576 + 1, 144):
         group = [line for line in linesOnSideLeft
-                 if (line[0] == 0 and line[1]
-                     in range(i, i + 144)) or (line[2] == 0 and line[3] in range(i, i + 144))]
+                 if (line[1] in range(i, i + 144)) and 450 < line[1] < 600]
 
         group2 = [line for line in linesOnSideRight
-                  if (line[0] == 0 and line[1]
-                      in range(i, i + 144)) or (line[2] == 0 and line[3] in range(i, i + 144))]
+                  if (line[1] in range(i, i + 144)) and 450 < line[1] < 600]
 
         if len(group) > 0:
             lineICareAbout = group[(len(group) - 1) // 2]
+
             cv2.line(img, (int(lineICareAbout[0]), int(lineICareAbout[1])),
                      (int(lineICareAbout[2]), int(lineICareAbout[3])), color, 10)
 
