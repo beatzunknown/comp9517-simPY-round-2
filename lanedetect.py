@@ -382,6 +382,7 @@ def draw_lines2(img, lines, color=[255, 0, 0], thickness=2):
 
 def getImage(n, set):
     path = "benchmark_velocity_supp/supp_img/" + str(n).zfill(4) + ".jpg"
+
     if (set == TEST or set == TRAIN):
         path = "benchmark_velocity_" + \
             setMap[set] + "/clips/" + str(n) + "/imgs/040.jpg"
@@ -391,10 +392,16 @@ def getImage(n, set):
     return img
 
 
+def getImageEvan():
+    pass
+
+
 def main():
     for i in range(1, 100):
         print(i)
         img = getImage(i, TRAIN)
+        #img = getImageEvan()
+
         cv2.imwrite("output/output" + str(i) +
                     "Original.jpg", RegionOfInterest(img))
 
