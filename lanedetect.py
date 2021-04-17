@@ -178,6 +178,36 @@ def extrapolateLine(img, gradient, x1, y1, color=[255, 0, 0], thickness=2):
                  (int(topPoint), int(yPointOnTop)), color, thickness)
 
 
+def getmaxXLine(lines):
+    if len(lines) > 0:
+        currMax = lines[0][0]
+        index = 0
+        for i in range(len(lines)):
+            line = lines[i]
+            if line[0] > currMax:
+                index = i
+                currMax = line[0]
+
+        return lines[index]
+
+    return None
+
+
+def getminYLine(lines):
+    if len(lines) > 0:
+        currMax = lines[0][1]
+        index = 0
+        for i in range(len(lines)):
+            line = lines[i]
+            if line[1] > currMax:
+                index = i
+                currMax = line[1]
+
+        return lines[index]
+
+    return None
+
+
 def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
     goodLines = []
     try:
@@ -202,7 +232,9 @@ def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
     linesOnBottom = [line for line in goodLines
                      if line != None and (0 < line[0] < 1280)]
 
-    goodLinesOnBottom = []
+    goodLinesOnBottomLeft = []
+    goodLinesOnBottomRight = []
+
     goodLinesOnLeft = []
     goodLinesOnRight = []
 
@@ -213,10 +245,20 @@ def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
 
         if len(group) > 0:
             lineICareAbout = group[(len(group) - 1) // 2]
-            goodLinesOnBottom.append(lineICareAbout)
+            if lineICareAbout[0] < 640:
+                goodLinesOnBottomLeft.append(lineICareAbout)
+            else:
+                goodLinesOnBottomRight.append(lineICareAbout)
 
-            cv2.line(img, (int(lineICareAbout[0]), int(lineICareAbout[1])),
-                     (int(lineICareAbout[2]), int(lineICareAbout[3])), color, 10)
+    lineICareAbout = getmaxXLine(goodLinesOnBottomLeft)
+    if lineICareAbout != None:
+        cv2.line(img, (int(lineICareAbout[0]), int(lineICareAbout[1])),
+                 (int(lineICareAbout[2]), int(lineICareAbout[3])), color, 10)
+
+    lineICareAbout = getmaxXLine(goodLinesOnBottomRight)
+    if lineICareAbout != None:
+        cv2.line(img, (int(lineICareAbout[0]), int(lineICareAbout[1])),
+                 (int(lineICareAbout[2]), int(lineICareAbout[3])), color, 10)
 
     for i in range(432, 576 + 1, 144):
         group = [line for line in linesOnSideLeft
@@ -227,14 +269,21 @@ def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
 
         if len(group) > 0:
             lineICareAbout = group[(len(group) - 1) // 2]
-
-            cv2.line(img, (int(lineICareAbout[0]), int(lineICareAbout[1])),
-                     (int(lineICareAbout[2]), int(lineICareAbout[3])), color, 10)
+            goodLinesOnLeft.append(lineICareAbout)
 
         if len(group2) > 0:
             lineICareAbout = group2[(len(group2) - 1) // 2]
-            cv2.line(img, (int(lineICareAbout[0]), int(lineICareAbout[1])),
-                     (int(lineICareAbout[2]), int(lineICareAbout[3])), color, 10)
+            goodLinesOnRight.append(lineICareAbout)
+
+    lineICareAbout = getminYLine(goodLinesOnLeft)
+    if lineICareAbout != None:
+        cv2.line(img, (int(lineICareAbout[0]), int(lineICareAbout[1])),
+                 (int(lineICareAbout[2]), int(lineICareAbout[3])), color, 10)
+
+    lineICareAbout = getminYLine(goodLinesOnRight)
+    if lineICareAbout != None:
+        cv2.line(img, (int(lineICareAbout[0]), int(lineICareAbout[1])),
+                 (int(lineICareAbout[2]), int(lineICareAbout[3])), color, 10)
 
 
 def draw_lines2(img, lines, color=[255, 0, 0], thickness=2):
