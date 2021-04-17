@@ -86,11 +86,6 @@ def RegionOfInterest(img):
     return masked_image
 
 
-def Preprocess(img):
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    return cv2.GaussianBlur(gray, (5, 5), 0)
-
-
 def OtsuImg(img):
     ret, otsu = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
     return otsu
@@ -104,56 +99,6 @@ def transformThreshold(img, thresholdValue):
             outputImage[i, j] = 255 * (img[i, j] > thresholdValue)
 
     return np.uint8(outputImage)
-
-
-def Canny(img):
-    return cv2.Canny(img, 100, 200)
-
-
-def RegionOfInterest(img):
-    """
-    Applies an image mask.
-
-    Only keeps the region of the image defined by the polygon
-    formed from `vertices`. The rest of the image is set to black.
-    """
-
-    lowerLeftPoint = [0, 660]
-    lowerRightPoint = [1280, 660]
-    upperLeftPoint = [120, 390]
-    upperRightPoint = [1100, 390]
-
-    vertices = np.array([[lowerLeftPoint, upperLeftPoint,
-                          upperRightPoint, lowerRightPoint]], dtype=np.int32)
-
-    # defining a blank mask to start with
-    mask = np.zeros_like(img)
-
-    # defining a 3 channel or 1 channel color to fill the mask with
-    # depending on the input image
-    if len(img.shape) > 2:
-        channel_count = img.shape[2]  # i.e. 3 or 4 depending on your image
-        ignore_mask_color = (255,) * channel_count
-    else:
-        ignore_mask_color = 255
-
-    # filling pixels inside the polygon defined by "vertices" with the fill color
-    cv2.fillPoly(mask, vertices, ignore_mask_color)
-
-    # returning the image only where mask pixels are nonzero
-    masked_image = cv2.bitwise_and(img, mask)
-    return masked_image
-
-
-def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
-    try:
-        if lines.any():
-            for line in lines:
-                if line.any():
-                    for x1, y1, x2, y2 in line:
-                        cv2.line(img, (x1, y1), (x2, y2), color, thickness)
-    except:
-        pass
 
 
 def hough_lines(img, drawlinesOg=False):
@@ -200,20 +145,102 @@ def weighted_img(img, initial_img, α=0.8, β=1., λ=0.):
     return cv2.addWeighted(initial_img, α, img, β, λ)
 
 
+def extrapolateLine(img, gradient, x1, y1, color=[255, 0, 0], thickness=2):
+    c = y1 - (gradient * x1)
+    topVal = 360
+    topPoint = (topVal - c) // gradient
+    pointOn720 = (720 - c) // gradient
+
+    ypointOn720 = 720
+    yPointOnTop = topVal
+
+    if pointOn720 < 0:
+        pointOn720 = 0
+        ypointOn720 = c
+    elif pointOn720 > 1280:
+        pointOn720 = 1280
+        ypointOn720 = (gradient * pointOn720) + c
+
+    if topPoint < 0:
+        topPoint = 0
+        yPointOnTop = c
+    elif topPoint > 1280:
+        topPoint = 1280
+        yPointOnTop = (gradient * topPoint) + c
+
+    if (int(topPoint) in range(600, 750)):
+        print("hello", int(topPoint), int(pointOn720),
+              int(yPointOnTop), int(ypointOn720))
+
+        return [int(topPoint), int(yPointOnTop), int(pointOn720), int(ypointOn720)]
+
+        cv2.line(img, (int(topPoint), int(yPointOnTop)),
+                 (int(pointOn720), int(ypointOn720)), color, thickness)
+
+
 def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
+    goodLines = []
     try:
         if lines.any():
             for line in lines:
                 if line.any():
                     for x1, y1, x2, y2 in line:
-                        cv2.line(img, (x1, y1), (x2, y2), color, thickness)
+                        gradient, intercept = np.polyfit((x1, x2), (y1, y2), 1)
+                        goodLines.append(
+                            extrapolateLine(img, gradient, x1, y1))
     except:
         pass
+
+    print(goodLines)
+
+    linesOnSideLeft = [line for line in goodLines
+                       if line != None and (line[0] == 0 or line[2] == 0)]
+
+    linesOnSideRight = [line for line in goodLines if line !=
+                        None and (line[0] == 1280 or line[2] == 1280)]
+
+    linesOnBottom = [line for line in goodLines
+                     if line != None and (0 < line[0] < 1280 or 0 < line[2] < 1280)]
+
+    goodLinesOnBottom = []
+    goodLinesOnLeft = []
+    goodLinesOnRight = []
+
+    for i in range(0, 1152 + 1, 128):
+        group = [line for line in linesOnBottom
+                 if (line[1] == 720 and line[0]
+                     in range(i, i + 128)) or (line[3] == 720 and line[2] in range(i, i + 128))]
+
+        if len(group) > 0:
+            lineICareAbout = group[(len(group) - 1) // 2]
+            goodLinesOnBottom.append(lineICareAbout)
+
+            cv2.line(img, (int(lineICareAbout[0]), int(lineICareAbout[1])),
+                     (int(lineICareAbout[2]), int(lineICareAbout[3])), color, 10)
+
+    for i in range(0, 576 + 1, 144):
+        group = [line for line in linesOnSideLeft
+                 if (line[0] == 0 and line[1]
+                     in range(i, i + 144)) or (line[2] == 0 and line[3] in range(i, i + 144))]
+
+        group2 = [line for line in linesOnSideRight
+                  if (line[0] == 0 and line[1]
+                      in range(i, i + 144)) or (line[2] == 0 and line[3] in range(i, i + 144))]
+
+        if len(group) > 0:
+            lineICareAbout = group[(len(group) - 1) // 2]
+            cv2.line(img, (int(lineICareAbout[0]), int(lineICareAbout[1])),
+                     (int(lineICareAbout[2]), int(lineICareAbout[3])), color, 10)
+
+        if len(group2) > 0:
+            lineICareAbout = group2[(len(group2) - 1) // 2]
+            cv2.line(img, (int(lineICareAbout[0]), int(lineICareAbout[1])),
+                     (int(lineICareAbout[2]), int(lineICareAbout[3])), color, 10)
 
 
 def draw_lines2(img, lines, color=[255, 0, 0], thickness=2):
     """
-    This function draws `lines` with `color` and `thickness`.    
+    This function draws `lines` with `color` and `thickness`.
     """
     imshape = img.shape
 
@@ -231,7 +258,7 @@ def draw_lines2(img, lines, color=[255, 0, 0], thickness=2):
     all_right_grad = []
     all_right_y = []
     all_right_x = []
-    #print("lines", lines)
+    # print("lines", lines)
 
     for line in lines:
         # print(line)
@@ -239,7 +266,7 @@ def draw_lines2(img, lines, color=[255, 0, 0], thickness=2):
 
         gradient, intercept = np.polyfit((x1, x2), (y1, y2), 1)
         ymin_global = min(min(y1, y2), ymin_global)
-        #print("gradient for", line, gradient)
+        # print("gradient for", line, gradient)
 
         if (gradient > 0):
             all_left_grad += [gradient]
@@ -250,14 +277,14 @@ def draw_lines2(img, lines, color=[255, 0, 0], thickness=2):
             all_right_y += [y1, y2]
             all_right_x += [x1, x2]
 
-    #print("all left gradients", all_left_grad)
+    # print("all left gradients", all_left_grad)
 
     left_mean_grad = np.mean(all_left_grad)
     left_y_mean = np.mean(all_left_y)
     left_x_mean = np.mean(all_left_x)
     left_intercept = left_y_mean - (left_mean_grad * left_x_mean)
 
-    #print("all right gradients", all_right_grad)
+    # print("all right gradients", all_right_grad)
 
     right_mean_grad = np.mean(all_right_grad)
     right_y_mean = np.mean(all_right_y)
@@ -270,10 +297,11 @@ def draw_lines2(img, lines, color=[255, 0, 0], thickness=2):
         lower_left_x = int((ymax_global - left_intercept) / left_mean_grad)
 
         # print('left')
-        #print(upper_left_x, ymin_global, lower_left_x, ymax_global)
+        # print(upper_left_x, ymin_global, lower_left_x, ymax_global)
         try:
             cv2.line(img, (upper_left_x, ymin_global),
                      (lower_left_x, ymax_global), color, thickness)
+            # extrapolateLine(img, left_mean_grad, upper_left_x, ymin_global)
         except:
             pass
 
@@ -281,7 +309,7 @@ def draw_lines2(img, lines, color=[255, 0, 0], thickness=2):
         upper_right_x = int((ymin_global - right_intercept) / right_mean_grad)
         lower_right_x = int((ymax_global - right_intercept) / right_mean_grad)
         # print('right')
-        #print(upper_right_x, ymin_global, lower_right_x, ymax_global)
+        # print(upper_right_x, ymin_global, lower_right_x, ymax_global)
         try:
             print('drawing line right')
             cv2.line(img, (upper_right_x, ymin_global),
