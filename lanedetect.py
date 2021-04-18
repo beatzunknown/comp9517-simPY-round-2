@@ -1,3 +1,4 @@
+import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
@@ -5,6 +6,9 @@ import os
 import json
 from numpy import ones, vstack
 from numpy.linalg import lstsq
+from evaluate.lane import LaneEval
+
+warnings.filterwarnings('ignore')
 
 COLOR = [255, 0, 0]
 THICKNESS = 2
@@ -92,7 +96,6 @@ def transform_threshold(img, threshold_value):
             output_image[i, j] = 255 * (img[i, j] > threshold_value)
 
     return np.uint8(output_image)
-
 
 def hough_lines(img, line_type):
     """
@@ -226,7 +229,7 @@ def filter_and_draw_lines(img, lines, color=[255, 0, 0], thickness=2):
 
 
     lanes, h_samples = formatData(edge_lines)
-    print('there are', len(lanes), 'lanes in image')
+    # print('there are', len(lanes), 'lanes in image')
     return lanes, h_samples
 
 def draw_lines(img, lines, extrapolated=False, filtered=False):
@@ -272,7 +275,7 @@ def formatData(lines):
 
     return lanes, h_samples
 
-def main():
+def detect_lines():
 
     # Uncomment to use lane detection dataset
 
@@ -316,6 +319,8 @@ def main():
 
         cv2.imwrite(f'output/output{str(i).zfill(3)}Final.jpg', np.uint8(img_final))
 
+detect_lines()
+
 '''
 {
   "lanes": [
@@ -333,4 +338,35 @@ def main():
 }
 '''
 
-main()
+def run_evaluation():
+    label_file = 'train_set/label_data_0313.json'
+
+    with open(label_file) as f:
+        labels = json.load(f)
+
+    accuracies, fp_rates, fn_rates = [], [], []
+    for label in labels:
+        path = f"train_set/{label['raw_file']}"
+        img = cv2.imread(path)
+        gt = label['lanes']
+
+        preprocessed_img = preprocess(img)
+        canny_img = canny(np.uint8(preprocessed_img))
+        masked_img = region_of_interest(canny_img)
+        img_final, pred, h_samples = hough_lines(masked_img, 'final')
+
+        accuracy, fp_rate, fn_rate = LaneEval.bench(pred, gt, h_samples)
+
+        accuracies.append(accuracy)
+        fp_rates.append(fp_rate)
+        fn_rates.append(fn_rate)
+
+    accuracy = sum(accuracies)/len(accuracies)
+    fp_rate = sum(fp_rates)/len(fp_rates)
+    fn_rate = sum(fn_rates)/len(fn_rates)
+    
+    print(f'Accuracy: {accuracy}')
+    print(f'False positive rate: {fp_rate}')
+    print(f'False negative rate: {fn_rate}')
+
+run_evaluation()
