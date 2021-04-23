@@ -1,7 +1,6 @@
 import numpy as np
 from sklearn.linear_model import LinearRegression
-import ujson as json
-
+import json
 
 class LaneEval(object):
     lr = LinearRegression()
@@ -26,11 +25,11 @@ class LaneEval(object):
         return np.sum(np.where(np.abs(pred - gt) < thresh, 1., 0.)) / len(gt)
 
     @staticmethod
-    def bench(pred, gt, y_samples, running_time):
+    def bench(pred, gt, y_samples):
         if any(len(p) != len(y_samples) for p in pred):
             raise Exception('Format of lanes error.')
-        if running_time > 200 or len(gt) + 2 < len(pred):
-            return 0., 0., 1.
+        # if running_time > 200 or len(gt) + 2 < len(pred):
+        #     return 0., 0., 1.
         angles = [LaneEval.get_angle(np.array(x_gts), np.array(y_samples)) for x_gts in gt]
         threshs = [LaneEval.pixel_thresh / np.cos(angle) for angle in angles]
         line_accs = []
@@ -95,7 +94,7 @@ if __name__ == '__main__':
     try:
         if len(sys.argv) != 3:
             raise Exception('Invalid input arguments')
-        print LaneEval.bench_one_submit(sys.argv[1], sys.argv[2])
+        print(LaneEval.bench_one_submit(sys.argv[1], sys.argv[2]))
     except Exception as e:
-        print e.message
+        print(e.message)
         sys.exit(e.message)
