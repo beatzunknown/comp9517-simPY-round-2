@@ -36,4 +36,7 @@
   * `save` - set to True if you want images to be saved to a file
   * `subset` - define a list of clip number that you want to run predictions for. If this is set to `[]` or ommitted, then predictions will be run for every clip in `TESTING_DIR`
 
-  
+### Lane Detection
+* Open `lane_detection.ipynb `
+* choose which dataset you wish to run the code on in cell 2
+* choose which clip from the dataset you would like to run the code on
