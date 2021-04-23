@@ -102,8 +102,8 @@ class VeloEval(object):
         pos_error = [[], [], []]
         velo_error = [[], [], []]
         for x_pred, x_gt in zip(pred_list, gt_list):
-            for gt in x_gt:
-                pred = VeloEval.find_nearest_gt(gt, x_pred)
+            for pred in x_pred:
+                gt = VeloEval.find_nearest_gt(pred, x_gt)
                 distance_label = VeloEval.get_distance_label(gt)
                 if 'position' not in pred or 'velocity' not in pred:
                     raise Exception('Missing position or velocity')
