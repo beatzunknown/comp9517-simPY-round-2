@@ -1,0 +1,3 @@
+[submodule "TrackRCNN"]
+	path = TrackRCNN
+	url = git@github.com:VisualComputingInstitute/TrackR-CNN.git
